@@ -2,12 +2,21 @@
   <au-input-form title="Pengisian Debit Jurnal VB"
                  with.bind="context"
                  options.bind="formOptions">
+    <au-autocomplete placeholder="pilih nomor realisasi vb"
+                     label="Nomor Realisasi VB"
+                     value.bind="vbRealization"
+                     loader.one-time="vbRealizationLoader"
+                     text="DocumentNo"
+                     read-only.bind="readOnly"
+                     options.bind="controlOptions">
+    </au-autocomplete>
     <au-autocomplete placeholder="pilih nomor referensi"
                      label="Nomor Referensi"
                      value.bind="referenceNo"
                      loader.one-time="referenceNoLoader"
                      text="value"
                      read-only.bind="readOnly"
+                     query.bind="vbFilter"
                      options.bind="controlOptions">
     </au-autocomplete>
     <au-autocomplete placeholder="pilih nomor referensi"
@@ -15,6 +24,7 @@
                      value.bind="referenceType"
                      loader.one-time="referenceTypeLoader"
                      text="value"
+                     query.bind="vbFilter"
                      read-only.bind="readOnly"
                      options.bind="controlOptions">
     </au-autocomplete>

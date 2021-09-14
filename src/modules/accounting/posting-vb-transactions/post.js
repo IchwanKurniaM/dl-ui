@@ -9,6 +9,7 @@ import { FormDialog } from "./dialog/form-dialog";
 var ReferenceNoLoader = require('../../../loader/journal-transaction-reference-no-loader');
 var ReferenceTypeLoader = require('../../../loader/journal-transaction-reference-type-loader');
 var COALoader = require('../../../loader/coa-loader');
+const VBRealizationLoader = require("../../expedition/loaders/vb-realization-loader");
 
 @inject(Service, Router, Dialog)
 export class Post {
@@ -46,6 +47,10 @@ export class Post {
 
   get referenceTypeLoader() {
     return ReferenceTypeLoader;
+  }
+
+  get vbRealizationLoader() {
+    return VBRealizationLoader;
   }
 
   @bindable selectedMonth;
@@ -193,16 +198,40 @@ export class Post {
     }
   }
 
+  vbFilter = { isVB: true }
+
   @bindable referenceNo;
   @bindable referenceType;
+  @bindable vbRealization;
   async search() {
     var referenceNo = this.referenceNo ? this.referenceNo.value : "";
     var referenceType = this.referenceType ? this.referenceType.value : "";
     console.log(referenceType);
-    var result = await this.service.getUnpostedTransactions(this.selectedMonth.MonthNumber, this.selectedYear, referenceNo, referenceType);
+    var result = await this.service.getUnpostedTransactions(this.selectedMonth.MonthNumber, this.selectedYear, referenceNo, referenceType)
+      .then((response) => {
+        let documents = response.data;
+
+        documents = documents.map((document) => {
+          return this.service.getRealizationByReferenceNo(document.ReferenceNo)
+            .then((vbResponse) => {
+              console.log(vbResponse);
+              if (vbResponse)
+                document.RealizationNo = vbResponse.DocumentNo;
+              return document;
+            })
+        })
+
+        return Promise.all(documents)
+          .then((promiseResponse) => {
+
+            if (this.vbRealization)
+              promiseResponse = promiseResponse.filter((item) => item.RealizationNo == this.vbRealization.DocumentNo)
+            return promiseResponse
+          })
+      })
 
     this.data.transactions = [];
-    for (var datum of result.data) {
+    for (var datum of result) {
       let rowspanNumber = datum.Items.length;
       datum.dateView = moment(datum.Date).format("DD-MMM-YYYY");
       for (let i = 0; i < datum.Items.length; i++) {
@@ -244,6 +273,8 @@ export class Post {
     console.log(id);
     this.dialog.show(FormDialog, id).then(() => this.search());
   }
+
+
 }
 
 export class KeysValueConverter {
